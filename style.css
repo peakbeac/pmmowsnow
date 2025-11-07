@@ -1,31 +1,87 @@
+/* --- General Body --- */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    margin: 0; /* Remove default body margin */
+    display: flex;
+    flex-direction: column; /* Make body a flex column */
+    min-height: 100vh; /* Make site at least full height */
+}
+
+/* --- Header --- */
 .header {
-    background-color:aquamarine;
-    display:flex;
-    flex-direction:row;
-    flex-wrap:nowrap;
-    align-items:center;
-    justify-content:center;
+    background-color: aquamarine;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;          /* Vertically center all items */
+    justify-content: space-between; /* THIS IS THE KEY CHANGE! */
+    padding: 10px 20px;           /* Add space around the edges */
 }
 
+/* Style the <h1> inside the header */
+.header h1 {
+    margin: 0; /* Remove default margins from h1 */
+    font-size: 1.8em;
+}
+
+/* Style the <a> tag inside the <h1> */
+.header h1 a {
+    text-decoration: none; /* Remove underline from link */
+    color: #333; /* Darker text for readability */
+}
+
+/* --- Header Buttons --- */
 .headButtons {
-    display:flex;
-    flex-direction:row;
-    flex-wrap:nowrap;
-    flex-grow: 100;
-    flex-shrink: 100;
+    display: flex;
+    flex-direction: row;
+    gap: 10px; /* This is a modern way to add space BETWEEN buttons */
+    /* No flex-grow or flex-shrink needed! */
 }
 
+/* Add some nice styling to the buttons */
+.headButtons button {
+    padding: 10px 15px;
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+    background-color: #007bff; /* A nice blue */
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.headButtons button:hover {
+    background-color: #0056b3; /* A darker blue on hover */
+}
+
+/* --- Content --- */
 .content {
-    display:flex;
+    display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    padding: 20px;
+    flex-grow: 1; /* This makes the content area take up remaining space */
 }
 
+/* --- Footer --- */
 .footer {
     background-color: lightgray;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    padding: 20px 0;
+    width: 100%; /* Make footer full width */
+    text-align: center; /* Center the copyright text */
+}
+
+/* Style the <hr> tags for consistency */
+hr {
+    border: none;
+    height: 1px;
+    background-color: #ddd; /* A light line */
+    width: 100%; /* Make it full width */
+    margin: 0;
 }
