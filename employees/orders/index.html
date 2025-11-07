@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en" class->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Job Portal</title>
+    <!-- 1. Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 2. Load the Inter font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Set Inter as the default font */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Simple spinner animation */
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #3b82f6; /* blue-500 */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <!-- 
+      SECTION 1: LOGIN FORM
+      This is shown by default.
+    -->
+    <div id="loginSection" class="min-h-screen flex items-center justify-center p-4">
+        <div class="w-full max-w-md bg-white p-8 rounded-xl shadow-lg">
+            <h1 class="text-3xl font-bold text-gray-900 mb-4">Employee Portal</h1>
+            <p class="text-gray-600 mb-6">Please enter the password to view the job list.</p>
+            
+            <form id="loginForm">
+                <div class="space-y-4">
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <input 
+                            type="password" 
+                            name="password" 
+                            id="password" 
+                            required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                    </div>
+                    <div>
+                        <button 
+                            type="submit" 
+                            id="loginButton"
+                            class="w-full flex items-center justify-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200"
+                        >
+                            Login
+                        </button>
+                    </div>
+                </div>
+            </form>
+            
+            <!-- Error Message (hidden by default) -->
+            <div id="loginError" class="hidden mt-4 p-3 bg-red-100 text-red-800 border border-red-200 rounded-lg">
+                <strong>Error:</strong> Invalid password. Please try again.
+            </div>
+        </div>
+    </div>
+
+    <!-- 
+      SECTION 2: LOADING SPINNER
+      This is shown after login, while data is fetching.
+    -->
+    <div id="loadingSection" class="hidden min-h-screen flex items-center justify-center flex-col">
+        <div class="spinner"></div>
+        <p class="text-gray-600 mt-4">Loading Jobs...</p>
+    </div>
+
+    <!-- 
+      SECTION 3: JOB TABLE (Data)
+      This is shown after a successful login and data fetch.
+    -->
+    <div id="dataSection" class="hidden p-4 md:p-8">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-6">
+                <h1 class="text-3xl font-bold text-gray-900">Outstanding Jobs</h1>
+                <!-- Filter Checkbox -->
+                <div class="flex items-center space-x-2 mt-4 md:mt-0">
+                    <input type="checkbox" id="filterCheckbox" class="h-4 w-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300" checked>
+                    <label for="filterCheckbox" class="text-sm font-medium text-gray-700">Show only "Outstanding" jobs</label>
+                </div>
+            </div>
+
+            <!-- Table Container -->
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50" id="tableHeader">
+                            <!-- Header rows will be built by JS -->
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200" id="tableBody">
+                            <!-- Data rows will be built by JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Empty State -->
+                <div id="emptyState" class="hidden p-12 text-center">
+                    <p class="text-gray-500">No jobs found matching your filter.</p>
+                </div>
+            </div>
+            <button id="logoutButton" class="mt-6 w-full md:w-auto px-6 py-2 bg-gray-600 text-white font-medium rounded-lg shadow-md hover:bg-gray-700">
+                Log Out
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. SET UP YOUR NEW GOOGLE APPS SCRIPT URL ---
+        // This is the URL from your NEW "Job Reader" script, NOT the contact form script.
+        const EMPLOYEE_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwYWoZc0hm8raDjxTg4RMPHFSlN0lOO_uOhamUjbPGd3DgqF0MrR9l0RM0ECcUR-7Tg/exec';
+
+        // --- 2. GET UI ELEMENTS ---
+        const loginSection = document.getElementById('loginSection');
+        const loadingSection = document.getElementById('loadingSection');
+        const dataSection = document.getElementById('dataSection');
+        
+        const loginForm = document.getElementById('loginForm');
+        const passwordInput = document.getElementById('password');
+        const loginError = document.getElementById('loginError');
+        
+        const tableHeader = document.getElementById('tableHeader');
+        const tableBody = document.getElementById('tableBody');
+        const emptyState = document.getElementById('emptyState');
+        const filterCheckbox = document.getElementById('filterCheckbox');
+        const logoutButton = document.getElementById('logoutButton');
+
+        // Store all fetched data in a global variable
+        let allJobData = [];
+
+        // --- 3. LOGIN FORM SUBMISSION ---
+        loginForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            loginError.classList.add('hidden');
+            const password = passwordInput.value;
+
+            // Show loading spinner
+            loginSection.classList.add('hidden');
+            loadingSection.classList.remove('hidden');
+
+            // --- 4. FETCH DATA FROM GOOGLE SCRIPT ---
+            fetch(`${EMPLOYEE_WEB_APP_URL}?password=${encodeURIComponent(password)}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(response => {
+                    // Check for error from our script (e.g., wrong password)
+                    if (response.error) {
+                        throw new Error(response.error);
+                    }
+                    
+                    // Save data globally
+                    allJobData = response.data;
+                    
+                    // Store password in session storage for refresh
+                    sessionStorage.setItem('job_portal_pass', password);
+                    
+                    // Show the data
+                    showDataScreen();
+                    populateTable();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    loginError.textContent = `Error: ${error.message}`;
+                    loginError.classList.remove('hidden');
+                    // Show login screen again
+                    loadingSection.classList.add('hidden');
+                    loginSection.classList.remove('hidden');
+                });
+        });
+
+        // --- 5. POPULATE TABLE FUNCTION ---
+        function populateTable() {
+            // Clear existing table data
+            tableHeader.innerHTML = '';
+            tableBody.innerHTML = '';
+            
+            if (allJobData.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            // --- A. Get Headers (first row of data) ---
+            const headers = allJobData[0];
+            const headerRow = document.createElement('tr');
+            headers.forEach(headerText => {
+                const th = document.createElement('th');
+                th.scope = 'col';
+                th.className = 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider';
+                th.textContent = headerText;
+                headerRow.appendChild(th);
+            });
+            tableHeader.appendChild(headerRow);
+            
+            // --- B. Get Data Rows (rest of the data) ---
+            let dataRows = allJobData.slice(1);
+            
+            // --- C. Filter Data ---
+            // We assume the FIRST column (index 0) is "Status"
+            const showOnlyOutstanding = filterCheckbox.checked;
+            if (showOnlyOutstanding) {
+                dataRows = dataRows.filter(row => 
+                    row[0] && row[0].toLowerCase() === 'outstanding'
+                );
+            }
+
+            if (dataRows.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            // --- D. Build Table Rows ---
+            dataRows.forEach(row => {
+                const tr = document.createElement('tr');
+                
+                // Add special styling for "Outstanding" rows
+                if (row[0] && row[0].toLowerCase() === 'outstanding') {
+                    tr.className = 'bg-yellow-50'; // Light yellow background
+                }
+
+                row.forEach(cellData => {
+                    const td = document.createElement('td');
+                    td.className = 'px-6 py-4 whitespace-nowrap text-sm text-gray-700';
+                    td.textContent = cellData;
+                    tr.appendChild(td);
+                });
+                tableBody.appendChild(tr);
+            });
+        }
+        
+        // --- 6. HELPER FUNCTIONS ---
+        
+        // Shows the main data screen
+        function showDataScreen() {
+            loginSection.classList.add('hidden');
+            loadingSection.classList.add('hidden');
+            dataSection.classList.remove('hidden');
+        }
+
+        // --- 7. EVENT LISTENERS ---
+        
+        // Re-run the table build when the filter changes
+        filterCheckbox.addEventListener('change', populateTable);
+        
+        // Logout button
+        logoutButton.addEventListener('click', () => {
+            sessionStorage.removeItem('job_portal_pass');
+            allJobData = []; // Clear data
+            passwordInput.value = ''; // Clear password field
+            dataSection.classList.add('hidden');
+            loginSection.classList.remove('hidden');
+        });
+
+        // --- 8. CHECK SESSION ON PAGE LOAD ---
+        // This allows users to refresh the page without logging in again
+        window.addEventListener('load', () => {
+            const storedPassword = sessionStorage.getItem('job_portal_pass');
+            if (storedPassword) {
+                // If password in session, "auto-login"
+                passwordInput.value = storedPassword;
+                loginForm.dispatchEvent(new Event('submit'));
+            }
+        });
+    </script>
+
+</body>
+</html>
