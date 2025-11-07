@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Us - P&amp;M Mow&amp;Snow</title>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-full p-4">
+
+    <div class="w-full max-w-lg">
+        <div class="bg-white p-8 md:p-10 rounded-xl shadow-lg">
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">Get in Touch</h1>
+            <p class="text-gray-600 mb-6">We'd love to hear from you. Please fill out the form below.</p>
+
+            <!-- Contact Form -->
+            <!-- We add 'novalidate' to prevent default browser validation,
+                 so we can handle all states with JavaScript. -->
+            <form id="contactForm" novalidate>
+                <div class="space-y-6">
+                    <!-- Name Field -->
+                    <div>
+                        <label for="Name" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                        <input 
+                            type="text" 
+                            name="Name" 
+                            id="Name" 
+                            required
+                            placeholder="Jane Doe"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                    </div>
+
+                    <!-- Email Field -->
+                    <div>
+                        <label for="Email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                        <input 
+                            type="email" 
+                            name="Email" 
+                            id="Email" 
+                            required
+                            placeholder="you@example.com"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                    </div>
+
+                    <!-- Message Field -->
+                    <div>
+                        <label for="Message" class="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                        <textarea 
+                            name="Message" 
+                            id="Message" 
+                            required
+                            rows="5"
+                            placeholder="Your message..."
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        ></textarea>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div>
+                        <button 
+                            type="submit" 
+                            id="submitButton"
+                            class="w-full flex items-center justify-center px-6 py-4 bg-blue-600 text-white font-medium rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200"
+                        >
+                            <!-- Spinner (hidden by default) -->
+                            <div id="spinner" class="spinner mr-3 hidden"></div>
+                            <!-- Button Text -->
+                            <span id="buttonText">Send Message</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Success Message (hidden by default) -->
+            <div id="successMessage" class="hidden mt-6 p-4 bg-green-100 text-green-800 border border-green-200 rounded-lg">
+                <strong>Success!</strong> Your message has been sent. We'll get back to you soon.
+            </div>
+
+            <!-- Error Message (hidden by default) -->
+            <div id="errorMessage" class="hidden mt-6 p-4 bg-red-100 text-red-800 border border-red-200 rounded-lg">
+                <strong>Error!</strong> Something went wrong. Please try again later.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. SET UP YOUR GOOGLE APPS SCRIPT URL ---
+        // After deploying your Google Apps Script, paste the "Web app URL" here.
+        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxKqY6mUGlwG1LomaSHFINfB5KghpD3_pN6KVJzhuqb9CyBks8sgTcmcQfcU_rIPZJy/exec';
+
+        // --- 2. GET FORM AND UI ELEMENTS ---
+        const form = document.getElementById('contactForm');
+        const submitButton = document.getElementById('submitButton');
+        const spinner = document.getElementById('spinner');
+        const buttonText = document.getElementById('buttonText');
+        const successMessage = document.getElementById('successMessage');
+        const errorMessage = document.getElementById('errorMessage');
+
+        // --- 3. ADD SUBMIT EVENT LISTENER ---
+        form.addEventListener('submit', function(event) {
+            // Prevent the default form submission
+            event.preventDefault();
+
+            // --- 4. VALIDATE FORM (Simple) ---
+            // A simple check. For production, you'd want more robust validation.
+            if (form.Name.value === '' || form.Email.value === '' || form.Message.value === '') {
+                // In a real app, you'd show errors under each field
+                console.warn('Please fill out all fields.');
+                // For this simple example, we'll just stop
+                // You could show an error message here.
+                return;
+            }
+
+            // --- 5. SHOW LOADING STATE ---
+            // Disable button, show spinner, hide old messages
+            submitButton.disabled = true;
+            spinner.classList.remove('hidden');
+            buttonText.textContent = 'Submitting...';
+            successMessage.classList.add('hidden');
+            errorMessage.classList.add('hidden');
+
+            // --- 6. PREPARE AND SEND DATA ---
+            // Use FormData to easily get all form data
+            const formData = new FormData(form);
+
+            // Use 'fetch' to send the data to your Google Apps Script
+            fetch(WEB_APP_URL, {
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => {
+                // Check if the response is OK (status 200-299)
+                if (!response.ok) {
+                    // If not, throw an error to be caught by the .catch()
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                // We are expecting a JSON response from our script
+                return response.json();
+            })
+            .then(data => {
+                // Check the 'result' property from our script's JSON response
+                if (data.result === 'success') {
+                    // --- 7. HANDLE SUCCESS ---
+                    successMessage.classList.remove('hidden');
+                    form.reset(); // Clear the form fields
+                } else {
+                    // Handle cases where the script might return an error
+                    throw new Error(data.message || 'Unknown error from script');
+                }
+            })
+            .catch(error => {
+                // --- 8. HANDLE FAILURE ---
+                console.error('Error submitting form:', error);
+                errorMessage.classList.remove('hidden');
+            })
+            .finally(() => {
+                // --- 9. RESET BUTTON STATE (always runs) ---
+                submitButton.disabled = false;
+                spinner.classList.add('hidden');
+                buttonText.textContent = 'Send Message';
+            });
+        });
+    </script>
+
+</body>
+</html>
